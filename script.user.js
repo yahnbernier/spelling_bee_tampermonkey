@@ -12,9 +12,6 @@
 
 // ==/UserScript==
 
-//const hint_element = document.getElementsByClassName( "pz-toolbar-button pz-toolbar-button__hints" )[0];
-//var hint_url = hint_element.href;
-
 // new puzzles release at 3 am so we shift NYC time backward 3 hours
 var utc_date = new Date();
 var currentdate = new Date( utc_date.toLocaleString( 'en-US', {
