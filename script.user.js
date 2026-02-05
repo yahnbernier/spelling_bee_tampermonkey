@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Spelling Bee Counters
 // @namespace    http://tampermonkey.net/
-// @version      0.6
+// @version      0.7
 // @description  Improve NYTimes Spelling Bee layout if using "Today's Hints"
 // @author       Yahn Bernier
 // @match        https://www.nytimes.com/puzzles/spelling-bee*
@@ -10,7 +10,7 @@
 // @updateURL    https://raw.githubusercontent.com/yahnbernier/spelling_bee_tampermonkey/blob/main/script.user.js
 // @downloadURL  https://raw.githubusercontent.com/yahnbernier/spelling_bee_tampermonkey/blob/main/script.user.js
 
-// ==UserScript==
+// ==/UserScript==
 
 //const hint_element = document.getElementsByClassName( "pz-toolbar-button pz-toolbar-button__hints" )[0];
 //var hint_url = hint_element.href;
