@@ -242,64 +242,69 @@ function updateTable() {
     // Skip header row (index 0), process data rows
     for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
-        const cells = row.querySelectorAll("td");
         
-        // Get the letter from first cell (e.g., "B:")
-        const letterCell = cells[0];
-        const letter = letterCell.textContent.trim().replace(":", "");
+        // Update length count cells using data attributes
+        const lengthCells = row.querySelectorAll("td[data-letter]");
         
-        const lcl = lengthCountsByLetter[letter] || {};
-        const lcl_hint = lengthCountsByLetterHints[letter] || {};
-        
-        let sum = 0;
-        let sumHint = 0;
-        
-        // Update length count cells (skip first cell which is the letter)
-        let cellIndex = 1;
-        for (let j = 4; j <= maxlen + 1; j++) {
-            const cell = cells[cellIndex];
-            if (!cell) break;
+        for (let cell of lengthCells) {
+            const letter = cell.getAttribute("data-letter");
+            const isSum = cell.hasAttribute("data-sum");
             
-            let add;
-            if (j in lcl_hint) {
-                sumHint += lcl_hint[j];
-                if (j in lcl) {
-                    sum += lcl[j];
-                    add = lcl[j].toString() + "/" + lcl_hint[j].toString();
-                } else {
-                    add = "0/" + lcl_hint[j].toString();
+            const lcl = lengthCountsByLetter[letter] || {};
+            const lcl_hint = lengthCountsByLetterHints[letter] || {};
+            
+            if (isSum) {
+                // This is the sum column
+                let sum = 0;
+                let sumHint = 0;
+                
+                for (let len = 4; len <= maxlen; len++) {
+                    if (len in lcl) {
+                        sum += lcl[len];
+                    }
+                    if (len in lcl_hint) {
+                        sumHint += lcl_hint[len];
+                    }
                 }
                 
-                // Update cell styling
-                cell.classList.remove("cell-complete", "cell-incomplete");
-                if (!is_complete(add)) {
-                    cell.classList.add("cell-incomplete");
-                    cell.setAttribute("aria-label", "Incomplete: " + add);
-                    add = "❌ " + add;
-                } else {
-                    cell.classList.add("cell-complete");
-                    cell.setAttribute("aria-label", "Complete: " + add);
-                    add = "✓ " + add;
-                }
-            } else if (j > maxlen) {
-                add = sum.toString() + "/" + sumHint.toString();
+                cell.textContent = sum.toString() + "/" + sumHint.toString();
             } else {
-                add = "-";
+                // This is a regular length cell
+                const length = Number(cell.getAttribute("data-length"));
+                
+                let add;
+                if (length in lcl_hint) {
+                    if (length in lcl) {
+                        add = lcl[length].toString() + "/" + lcl_hint[length].toString();
+                    } else {
+                        add = "0/" + lcl_hint[length].toString();
+                    }
+                    
+                    // Update cell styling
+                    cell.classList.remove("cell-complete", "cell-incomplete");
+                    if (!is_complete(add)) {
+                        cell.classList.add("cell-incomplete");
+                        cell.setAttribute("aria-label", "Incomplete: " + add);
+                        add = "❌ " + add;
+                    } else {
+                        cell.classList.add("cell-complete");
+                        cell.setAttribute("aria-label", "Complete: " + add);
+                        add = "✓ " + add;
+                    }
+                } else {
+                    add = "-";
+                }
+                
+                cell.textContent = add;
             }
-            
-            cell.textContent = add;
-            cellIndex++;
         }
         
-        // Update two-letter pair cells
-        const twoLetterCells = row.querySelectorAll(".cellwide");
+        // Update two-letter pair cells using data attributes
+        const twoLetterCells = row.querySelectorAll(".cellwide[data-pair]");
         for (let cellWide of twoLetterCells) {
-            const match = cellWide.textContent.match(/([A-Z]{2})-/);
-            if (!match) continue;
+            const pair = cellWide.getAttribute("data-pair");
             
-            const pair = match[1].toLowerCase();
             let progress;
-            
             if (pair in dict) {
                 progress = dict[pair].toString() + "/" + dictHints[pair].toString();
             } else {
@@ -748,6 +753,17 @@ function continue_processing()
         {
             newCell = document.createElement( 'td' );
             newCell.className = "cell";
+            
+            // Add data attributes for easy identification during updates
+            newCell.setAttribute("data-letter", key);
+            if ( j <= maxlen )
+            {
+                newCell.setAttribute("data-length", j.toString());
+            }
+            else
+            {
+                newCell.setAttribute("data-sum", "true");
+            }
 
             var add;
             if ( j in lcl_hint )
@@ -794,6 +810,9 @@ function continue_processing()
         {
             newCell = document.createElement( 'td' );
             newCell.className = "cellwide";
+            
+            // Add data attribute for easy identification during updates
+            newCell.setAttribute("data-pair", twoLetterPair);
 
             if ( twoLetterPair in dict )
             {
