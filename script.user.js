@@ -377,6 +377,48 @@ function setupWordListObserver() {
         wordListObserver.disconnect();
     }
     
+    // Reentrancy guard and update scheduling
+    let isUpdating = false;
+    let updatePending = false;
+    let debounceTimer = null;
+    
+    const scheduleUpdate = () => {
+        // If already scheduled, do nothing (debouncing)
+        if (debounceTimer !== null) {
+            return;
+        }
+        
+        // Debounce: wait for mutation burst to settle
+        debounceTimer = setTimeout(() => {
+            debounceTimer = null;
+            
+            // If currently updating, queue another run
+            if (isUpdating) {
+                updatePending = true;
+                return;
+            }
+            
+            // Perform the update
+            isUpdating = true;
+            
+            // Defer to next tick to avoid nested observer calls
+            setTimeout(() => {
+                try {
+                    updateTable();
+                    updateProgressLabels();
+                } finally {
+                    isUpdating = false;
+                    
+                    // If changes arrived during update, run once more
+                    if (updatePending) {
+                        updatePending = false;
+                        scheduleUpdate();
+                    }
+                }
+            }, 0);
+        }, 50); // 50ms debounce window
+    };
+    
     // Observe changes to the word list area
     const wordListContainer = document.querySelector(".sb-wordlist-window, .sb-wordlist-drawer");
     const progressContainer = document.querySelector(".sb-progress-value");
@@ -405,8 +447,7 @@ function setupWordListObserver() {
         }
         
         if (shouldUpdate) {
-            updateTable();
-            updateProgressLabels();
+            scheduleUpdate();
         }
     });
     
