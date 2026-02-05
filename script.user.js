@@ -8,6 +8,7 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=nytimes.com
 // @grant        GM_xmlhttpRequest
 // @updateURL    https://raw.githubusercontent.com/yahnbernier/spelling_bee_tampermonkey/blob/main/script.user.js
+// @downloadURL  https://raw.githubusercontent.com/yahnbernier/spelling_bee_tampermonkey/blob/main/script.user.js
 
 // ==/UserScript==
 
