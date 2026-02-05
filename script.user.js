@@ -1,7 +1,4 @@
-// ==UserScript==
-// @name         Spelling Bee Counters
-// @namespace    http://tampermonkey.net/
-// @version      0.5
+// @version      0.6
 // @description  Improve NYTimes Spelling Bee layout if using "Today's Hints"
 // @author       Yahn Bernier
 // @match        https://www.nytimes.com/puzzles/spelling-bee*
@@ -74,7 +71,7 @@ var lengthCountsByLetter = {}
 
 // hints
 var dictHints = {};
-var lengthCountsByLetterHints = {}
+var lengthCountsByLetterHints = {};
 
 var max_score = 0;
 var total_words = 0;
@@ -138,7 +135,7 @@ let HintProcessor = class
 
     get_max_score( doc )
     {
-        const pattern = /POINTS\:\s+([0-9]+)\,/;
+        const pattern = /POINTS\:\s+([0-9]+)/;
 
         for ( const node of doc.getElementsByClassName("content") )
         {
@@ -154,7 +151,7 @@ let HintProcessor = class
 
     get_total_words( doc )
     {
-        const pattern = /WORDS\:\s+([0-9]+)\,/;
+        const pattern = /WORDS\:\s+([0-9]+)/;
 
         for ( const node of doc.getElementsByClassName("content") )
         {
@@ -168,29 +165,6 @@ let HintProcessor = class
         return 0;
     }
 }
-
-/*
-extract the table from hints site directly and fill in table showing 0/2 etc.
-
-	4	5	6	7	8	10	Σ
-B:	2	2	2	2	-	-	8
-D:	4	2	3	-	-	-	9
-E:	-	2	1	1	2	1	7
-L:	1	1	1	-	-	-	3
-M:	11	7	6	2	1	-	27
-N:	-	-	-	-	1	-	1
-O:	1	-	-	-	-	-	1
-Σ:	19	14	13	5	4	1	56
-Two letter list:
-
-BE-1 BL-2 BO-5
-DE-5 DO-4
-EM-7
-LE-1 LO-2
-ME-12 MO-15
-NO-1
-OM-1
-*/
 
 function is_complete( str )
 {
@@ -208,8 +182,248 @@ function is_complete( str )
 }
 
 var intv;
+var wordListObserver = null;
 
+function rebuildDictionaries() {
+    // Reset dictionaries
+    dict = {};
+    lengthCountsByLetter = {};
+    
+    const nodes = document.querySelectorAll(".sb-anagram, .sb-anagram.pangram");
+    var wordsSeen = {};
+    
+    for (let i = 0; i < nodes.length; i++) {
+        const element = nodes[i];
+        const word = element.textContent.replace(/\s+\d+\/\d+.*$/, '').trim(); // Remove progress labels
+        
+        if (word in wordsSeen) {
+            continue;
+        }
+        
+        wordsSeen[word] = 1;
+        
+        const firstCharacter = word.slice(0, 1);
+        const firstTwoChars = word.slice(0, 2);
+        
+        // Build two-letter dictionary
+        if (!(firstTwoChars in dict)) {
+            dict[firstTwoChars] = 0;
+        }
+        dict[firstTwoChars] += 1;
+        
+        // Build length counts by letter
+        const length = word.length;
+        if (!(firstCharacter in lengthCountsByLetter)) {
+            lengthCountsByLetter[firstCharacter] = {};
+        }
+        
+        const lcl = lengthCountsByLetter[firstCharacter];
+        if (!(length in lcl)) {
+            lcl[length] = 0;
+        }
+        lcl[length] += 1;
+    }
+}
 
+function updateTable() {
+    console.log("Updating table with new word data...");
+    
+    rebuildDictionaries();
+    
+    // Update the main table
+    const tableBody = document.querySelector(".table tbody");
+    if (!tableBody) return;
+    
+    const rows = tableBody.querySelectorAll(".row");
+    
+    // Skip header row (index 0), process data rows
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.querySelectorAll("td");
+        
+        // Get the letter from first cell (e.g., "B:")
+        const letterCell = cells[0];
+        const letter = letterCell.textContent.trim().replace(":", "");
+        
+        const lcl = lengthCountsByLetter[letter] || {};
+        const lcl_hint = lengthCountsByLetterHints[letter] || {};
+        
+        let sum = 0;
+        let sumHint = 0;
+        
+        // Update length count cells (skip first cell which is the letter)
+        let cellIndex = 1;
+        for (let j = 4; j <= maxlen + 1; j++) {
+            const cell = cells[cellIndex];
+            if (!cell) break;
+            
+            let add;
+            if (j in lcl_hint) {
+                sumHint += lcl_hint[j];
+                if (j in lcl) {
+                    sum += lcl[j];
+                    add = lcl[j].toString() + "/" + lcl_hint[j].toString();
+                } else {
+                    add = "0/" + lcl_hint[j].toString();
+                }
+                
+                // Update cell styling
+                cell.classList.remove("cell-complete", "cell-incomplete");
+                if (!is_complete(add)) {
+                    cell.classList.add("cell-incomplete");
+                    cell.setAttribute("aria-label", "Incomplete: " + add);
+                    add = "❌ " + add;
+                } else {
+                    cell.classList.add("cell-complete");
+                    cell.setAttribute("aria-label", "Complete: " + add);
+                    add = "✓ " + add;
+                }
+            } else if (j > maxlen) {
+                add = sum.toString() + "/" + sumHint.toString();
+            } else {
+                add = "-";
+            }
+            
+            cell.textContent = add;
+            cellIndex++;
+        }
+        
+        // Update two-letter pair cells
+        const twoLetterCells = row.querySelectorAll(".cellwide");
+        for (let cellWide of twoLetterCells) {
+            const match = cellWide.textContent.match(/([A-Z]{2})-/);
+            if (!match) continue;
+            
+            const pair = match[1].toLowerCase();
+            let progress;
+            
+            if (pair in dict) {
+                progress = dict[pair].toString() + "/" + dictHints[pair].toString();
+            } else {
+                progress = "0/" + dictHints[pair].toString();
+            }
+            
+            let add;
+            cellWide.classList.remove("cell-complete", "cell-incomplete");
+            if (!is_complete(progress)) {
+                cellWide.classList.add("cell-incomplete");
+                cellWide.setAttribute("aria-label", "Incomplete: " + pair.toUpperCase() + "-" + progress);
+                add = "❌ " + pair.toUpperCase() + "-" + progress;
+            } else {
+                cellWide.classList.add("cell-complete");
+                cellWide.setAttribute("aria-label", "Complete: " + pair.toUpperCase() + "-" + progress);
+                add = "✓ " + pair.toUpperCase() + "-" + progress;
+            }
+            
+            cellWide.textContent = add;
+        }
+    }
+    
+    // Update anagram labels with progress
+    updateAnagramLabels();
+}
+
+function updateAnagramLabels() {
+    const nodes = document.querySelectorAll(".sb-anagram, .sb-anagram.pangram");
+    var dictSeen = {};
+    
+    for (let i = 0; i < nodes.length; i++) {
+        const element = nodes[i];
+        const word = element.textContent.replace(/\s+\d+\/\d+.*$/, '').trim();
+        const firstTwoChars = word.slice(0, 2);
+        
+        if (firstTwoChars in dictSeen) {
+            continue;
+        }
+        
+        const count = dict[firstTwoChars] || 0;
+        const goal = dictHints[firstTwoChars];
+        
+        if (!goal) continue;
+        
+        dictSeen[firstTwoChars] = true;
+        const prog = count.toString() + "/" + goal.toString();
+        
+        element.textContent = word + " " + prog;
+        element.style.fontWeight = "bold";
+        element.style.color = is_complete(prog) ? "blue" : "red";
+    }
+}
+
+function updateProgressLabels() {
+    // Update the progress label
+    const progressNode = document.getElementsByClassName("sb-progress-value")[0];
+    if (progressNode && max_score > 0) {
+        const currentScore = progressNode.textContent.replace(/\/\d+$/, '').trim();
+        progressNode.textContent = currentScore + "/" + max_score.toString();
+    }
+    
+    // Update word list label
+    const wordNode = document.getElementsByClassName("sb-wordlist-summary")[0];
+    if (wordNode && total_words > 0) {
+        const match = wordNode.textContent.match(/^(\\d+)/);
+        if (match) {
+            const currentCount = match[1];
+            wordNode.textContent = currentCount + " out of " + total_words.toString();
+        }
+    }
+}
+
+function setupWordListObserver() {
+    if (wordListObserver) {
+        wordListObserver.disconnect();
+    }
+    
+    // Observe changes to the word list area
+    const wordListContainer = document.querySelector(".sb-wordlist-window, .sb-wordlist-drawer");
+    const progressContainer = document.querySelector(".sb-progress-value");
+    
+    wordListObserver = new MutationObserver((mutations) => {
+        let shouldUpdate = false;
+        
+        for (let mutation of mutations) {
+            // Check if new words were added or removed
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                for (let node of mutation.addedNodes) {
+                    if (node.classList && (node.classList.contains('sb-anagram') || 
+                        node.querySelector && node.querySelector('.sb-anagram'))) {
+                        shouldUpdate = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Check if progress text changed
+            if (mutation.type === 'characterData' || 
+                (mutation.type === 'childList' && mutation.target.classList && 
+                 mutation.target.classList.contains('sb-progress-value'))) {
+                shouldUpdate = true;
+            }
+        }
+        
+        if (shouldUpdate) {
+            updateTable();
+            updateProgressLabels();
+        }
+    });
+    
+    const config = {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        characterDataOldValue: true
+    };
+    
+    if (wordListContainer) {
+        wordListObserver.observe(wordListContainer, config);
+    }
+    
+    if (progressContainer) {
+        wordListObserver.observe(progressContainer, config);
+    }
+    
+    console.log("Word list observer set up for real-time updates");
+}
 
 function continue_processing()
 {
@@ -242,84 +456,14 @@ function continue_processing()
         // FIX END
     }
 
-    // pass 1 build dict
-
-    var lcl;
-    var lcl_hint;
-    var i;
-    var element;
-    var firstTwoChars = "";
-    var firstCharacter;
-    var wordsSeen = {}
-
-     for (i = 0; i < c; i++) {
-        element = nodes[i];
-
-        var word = element.textContent;
-        if ( word in wordsSeen )
-        {
-            continue;
-        }
-
-        wordsSeen[ word ] = 1;
-
-        firstCharacter = element.textContent.slice( 0, 1 );
-        firstTwoChars = element.textContent.slice( 0, 2 );
-        if ( !(firstTwoChars in dict ) )
-        {
-            dict[ firstTwoChars ] = 0;
-        }
-
-        dict[ firstTwoChars ] += 1;
-
-        // now deal with first char counts
-        var length = element.textContent.length;
-        if ( !( firstCharacter in lengthCountsByLetter ) )
-        {
-            lengthCountsByLetter[ firstCharacter ] = {}
-        }
-
-        lcl = lengthCountsByLetter[ firstCharacter ];
-
-        if ( !(length in lcl ) )
-        {
-            lcl[ length ] = 0;
-        }
-
-        lcl[ length ] += 1;
-    }
+    // Build initial dictionaries
+    rebuildDictionaries();
 
     console.log( "length by first letter...", Object.keys( lengthCountsByLetter ).length );
     console.log( "length by first two letters...", Object.keys( dict ).length );
 
-    //console.log( "first two letters..." );
-
-    var dictSeen = {}; // track first time we printed pair
-    for ( i = 0; i < c; i++ ) {
-        element = nodes[i];
-        //console.log( element );
-        firstTwoChars = element.textContent.slice( 0, 2 );
-        var count = dict[ firstTwoChars ];
-        if ( firstTwoChars in dictSeen )
-        {
-            continue;
-        }
-
-        var goal = dictHints[ firstTwoChars ];
-
-        dictSeen[ firstTwoChars ] = true;
-        var prog = count.toString() + "/" + goal.toString();
-        element.textContent = element.textContent + " " + prog;
-        element.style.color = "blue";
-        if ( !is_complete( prog ) )
-        {
-            element.style.color = "red";
-        }
-        element.style.fontWeight = "bold";
-    }
-
-    //console.log( dict );
-    //console.log( dictHints );
+    // Update anagram labels initially
+    updateAnagramLabels();
 
     console.log( "set style..." );
 
@@ -533,12 +677,12 @@ function continue_processing()
         //console.log( key, two_letters );
         // console.log( "lengthCountsByLetter", lengthCountsByLetter );
 
-        lcl = {}
+        var lcl = {}
         if ( key in lengthCountsByLetter )
         {
             lcl = lengthCountsByLetter[ key ];
         }
-        lcl_hint = lengthCountsByLetterHints[ key ];
+        var lcl_hint = lengthCountsByLetterHints[ key ];
 
         newRow = document.createElement( 'tr' );
         newRow.className = "row";
@@ -602,31 +746,31 @@ function continue_processing()
         }
 
         // now append the two letter hints
-        for ( j of two_letters )
+        for ( var twoLetterPair of two_letters )
         {
             newCell = document.createElement( 'td' );
             newCell.className = "cellwide";
 
-            if ( j in dict )
+            if ( twoLetterPair in dict )
             {
-                progress = dict[ j ].toString() + "/" + dictHints[ j ].toString();
+                progress = dict[ twoLetterPair ].toString() + "/" + dictHints[ twoLetterPair ].toString();
             }
             else
             {
-                progress = "0/" + dictHints[ j ].toString()
+                progress = "0/" + dictHints[ twoLetterPair ].toString()
             }
 
              if ( !is_complete( progress ) )
              {
                  newCell.classList.add("cell-incomplete");
-                 newCell.setAttribute("aria-label", "Incomplete: " + j.toUpperCase() + "-" + progress);
-                 add = "❌ " + j.toUpperCase() + "-" + progress;
+                 newCell.setAttribute("aria-label", "Incomplete: " + twoLetterPair.toUpperCase() + "-" + progress);
+                 add = "❌ " + twoLetterPair.toUpperCase() + "-" + progress;
              }
              else
              {
                  newCell.classList.add("cell-complete");
-                 newCell.setAttribute("aria-label", "Complete: " + j.toUpperCase() + "-" + progress);
-                 add = "✓ " + j.toUpperCase() + "-" + progress;
+                 newCell.setAttribute("aria-label", "Complete: " + twoLetterPair.toUpperCase() + "-" + progress);
+                 add = "✓ " + twoLetterPair.toUpperCase() + "-" + progress;
              }
 
             newCell.textContent = add;
@@ -646,22 +790,12 @@ function continue_processing()
     console.log( "update progress labels !" );
 
     // update the progress label
-    var progressNode = document.getElementsByClassName( "sb-progress-value" )[ 0 ];
-    if ( progressNode )
-    {
-       progressNode.textContent = progressNode.textContent + "/" + max_score.toString();
-       console.log( progressNode.textContent );
-    }
-
-    // update word list label
-    var wordNode = document.getElementsByClassName( "sb-wordlist-summary" )[ 0 ];
-    if ( wordNode )
-    {
-        wordNode.textContent = wordNode.textContent + " out of " + total_words.toString();
-        console.log( progressNode.textContent );
-    }
+    updateProgressLabels();
 
     content_box.appendChild( newArea );
+    
+    // Set up real-time observer after table is created
+    setupWordListObserver();
 }
 
 GM_xmlhttpRequest({
@@ -737,4 +871,3 @@ GM_xmlhttpRequest({
         startIfReady();
     }
 });
-
