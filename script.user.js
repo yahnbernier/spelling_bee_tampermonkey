@@ -10,8 +10,6 @@
 // @updateURL    https://raw.githubusercontent.com/yahnbernier/spelling_bee_tampermonkey/blob/main/script.user.js
 // @downloadURL  https://raw.githubusercontent.com/yahnbernier/spelling_bee_tampermonkey/blob/main/script.user.js
 
-// ==/UserScript==
-
 //const hint_element = document.getElementsByClassName( "pz-toolbar-button pz-toolbar-button__hints" )[0];
 //var hint_url = hint_element.href;
 
