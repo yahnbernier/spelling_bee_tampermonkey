@@ -356,8 +356,8 @@ function continue_processing()
         transition: background-color 0.2s ease;
     }
 
-    .row:hover {
-        background-color: #fffacd !important;
+    .table .row:hover {
+        background-color: #fffacd;
         cursor: pointer;
     }
 
@@ -578,11 +578,13 @@ function continue_processing()
                 if ( !is_complete( add ) )
                 {
                     newCell.classList.add("cell-incomplete");
+                    newCell.setAttribute("aria-label", "Incomplete: " + add);
                     add = "❌ " + add;
                 }
                 else
                 {
                     newCell.classList.add("cell-complete");
+                    newCell.setAttribute("aria-label", "Complete: " + add);
                     add = "✓ " + add;
                 }
             }
@@ -617,11 +619,13 @@ function continue_processing()
              if ( !is_complete( progress ) )
              {
                  newCell.classList.add("cell-incomplete");
+                 newCell.setAttribute("aria-label", "Incomplete: " + j.toUpperCase() + "-" + progress);
                  add = "❌ " + j.toUpperCase() + "-" + progress;
              }
              else
              {
                  newCell.classList.add("cell-complete");
+                 newCell.setAttribute("aria-label", "Complete: " + j.toUpperCase() + "-" + progress);
                  add = "✓ " + j.toUpperCase() + "-" + progress;
              }
 
