@@ -341,33 +341,95 @@ function continue_processing()
         text-align: center;
         text-transform: uppercase;
         width: auto;
-        margin: 0rem;
-        font-size: 0.60rem;
-        line-height: 1.0rem;
+        margin: 0.5rem 0;
+        font-size: 0.75rem;
+        line-height: 1.2rem;
+        border-collapse: collapse;
+        background-color: #f7f7f7;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
     }
 
     .row {
-        height: 12px;
+        height: auto;
+        transition: background-color 0.2s ease;
+    }
+
+    .table .row:hover {
+        background-color: #fffacd;
+        cursor: pointer;
+    }
+
+    .row:first-child {
+        background-color: #f0c800;
+        border-bottom: 2px solid #d4b000;
+    }
+
+    .row:nth-child(odd):not(:first-child) {
+        background-color: #f7f7f7;
+    }
+
+    .row:nth-child(even) {
+        background-color: #ffffff;
     }
 
     .celllegend {
-        width: 20px;
-        min-width: 20px;
-        max-width: 20px;
+        width: 24px;
+        min-width: 24px;
+        max-width: 24px;
+        padding: 6px 4px;
     }
 
     .cell {
-        width: 40px;
-        min-width: 40px;
-        max-width: 40px;
+        width: 44px;
+        min-width: 44px;
+        max-width: 44px;
         text-align: right;
+        padding: 6px 8px;
+        transition: background-color 0.2s ease;
+    }
+
+    .cell:hover {
+        background-color: #f0c800;
     }
 
     .cellwide {
-        width: 50px;
-        min-width: 50px;
-        max-width: 50px;
+        width: 60px;
+        min-width: 60px;
+        max-width: 60px;
         text-align: right;
+        padding: 6px 8px;
+        font-size: 0.7rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .cellwide:hover {
+        background-color: #f0c800;
+    }
+
+    .cell-complete {
+        color: #5a5a5a;
+        background-color: #e6f3e6;
+        font-weight: normal;
+    }
+
+    .cell-incomplete {
+        color: red;
+        background-color: #ffe6e6;
+        font-weight: bold;
+    }
+
+    .table-header {
+        background-color: #f0c800;
+        padding: 10px;
+        border-radius: 8px 8px 0 0;
+        margin-bottom: 0;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1rem;
+        color: #000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
   `;
     document.head.appendChild(style);
@@ -387,6 +449,12 @@ function continue_processing()
     var newArea = document.createElement( 'div' );
     // ... rest of your table creation code ...
     //content_box.appendChild( newArea );
+
+    // Add header section
+    var tableHeader = document.createElement( 'div' );
+    tableHeader.className = "table-header";
+    tableHeader.textContent = "📊 Word Count Progress";
+    newArea.appendChild( tableHeader );
 
     var newTable = document.createElement( 'table' );
     newTable.className = "table";
@@ -509,8 +577,15 @@ function continue_processing()
 
                 if ( !is_complete( add ) )
                 {
-                    newCell.style.color = "red";
-                    newCell.style.fontWeight = "bold";
+                    newCell.classList.add("cell-incomplete");
+                    newCell.setAttribute("aria-label", "Incomplete: " + add);
+                    add = "❌ " + add;
+                }
+                else
+                {
+                    newCell.classList.add("cell-complete");
+                    newCell.setAttribute("aria-label", "Complete: " + add);
+                    add = "✓ " + add;
                 }
             }
             else if ( j > maxlen )
@@ -543,11 +618,16 @@ function continue_processing()
 
              if ( !is_complete( progress ) )
              {
-                 newCell.style.color = "red";
-                 newCell.style.fontWeight = "700";
+                 newCell.classList.add("cell-incomplete");
+                 newCell.setAttribute("aria-label", "Incomplete: " + j.toUpperCase() + "-" + progress);
+                 add = "❌ " + j.toUpperCase() + "-" + progress;
              }
-
-            add = j.toUpperCase() + "-" + progress;
+             else
+             {
+                 newCell.classList.add("cell-complete");
+                 newCell.setAttribute("aria-label", "Complete: " + j.toUpperCase() + "-" + progress);
+                 add = "✓ " + j.toUpperCase() + "-" + progress;
+             }
 
             newCell.textContent = add;
             newRow.appendChild( newCell );
