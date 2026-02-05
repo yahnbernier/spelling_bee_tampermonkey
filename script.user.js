@@ -7,6 +7,7 @@
 // @match        https://www.nytimes.com/puzzles/spelling-bee*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=nytimes.com
 // @grant        GM_xmlhttpRequest
+// @updateURL
 
 // ==/UserScript==
 
