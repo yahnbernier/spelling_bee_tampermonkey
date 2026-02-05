@@ -1,3 +1,4 @@
+// ==UserScript==
 // @name         Spelling Bee Counters
 // @namespace    http://tampermonkey.net/
 // @version      0.6
