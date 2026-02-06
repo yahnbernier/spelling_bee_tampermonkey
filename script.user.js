@@ -681,9 +681,8 @@ function continue_processing()
 
     /* Persistent highlight for last updated cell */
     .cell-last-updated {
-        background-color: #fff4cc !important;
-        border: 2px solid #f0c800;
-        box-shadow: 0 0 5px rgba(220, 255, 191, 0.5);
+        background-color: #e6f3e6;
+        box-shadow: 0 0 5px rgba(200, 230, 200, 0.5);
     }
 
     .table-header {
