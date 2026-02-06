@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Spelling Bee Counters
 // @namespace    http://tampermonkey.net/
-// @version      0.9
+// @version      1.0
 // @description  Improve NYTimes Spelling Bee layout if using "Today's Hints"
 // @author       Yahn Bernier
 // @match        https://www.nytimes.com/puzzles/spelling-bee*
@@ -477,30 +477,7 @@ function continue_processing()
 
     const nodes = document.querySelectorAll(".sb-anagram, .sb-anagram.pangram");
     var c = nodes.length;
-
     console.log( "progress words", c );
-
-    if ( c == 0 )
-    {
-        var div = document.createElement( "div" );
-        div.innerHTML = '<div id="childId"><br>';
-        div.innerHTML = '<br>No words retrieved (just started day?)!<br>';
-        div.innerHTML += '</div>';
-        div.style.color = "blue";
-        div.style.fontWeight = "bold";
-        div.style.fontSize = "x-large";
-
-        // FIX START: Check if pz-module exists
-        const pzmodule = document.getElementsByClassName( "pz-module" )[0];
-        if (pzmodule) {
-            pzmodule.appendChild( div );
-        } else {
-            // Fallback: append to the main game container if pz-module isn't found
-            const fallback = document.querySelector(".sb-content-box") || document.body;
-            fallback.appendChild(div);
-        }
-        // FIX END
-    }
 
     // Build initial dictionaries
     rebuildDictionaries();
