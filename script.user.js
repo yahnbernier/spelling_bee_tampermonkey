@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Spelling Bee Counters
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  Improve NYTimes Spelling Bee layout if using "Today's Hints"
 // @author       Yahn Bernier
 // @match        https://www.nytimes.com/puzzles/spelling-bee*
