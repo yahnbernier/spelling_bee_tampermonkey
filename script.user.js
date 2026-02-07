@@ -584,12 +584,12 @@ function continue_processing()
         text-transform: uppercase;
         width: auto;
         margin: 0.5rem 0;
-        font-size: 0.75rem;
-        line-height: 1.0rem;
+        font-size: 0.6rem;
+        line-height: 0.8rem;
         border-collapse: collapse;
         background-color: #f7f7f7;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         overflow: hidden;
     }
 
@@ -617,18 +617,18 @@ function continue_processing()
     }
 
     .celllegend {
-        width: 24px;
-        min-width: 24px;
-        max-width: 24px;
-        padding: 6px 4px;
+        width: 18px;
+        min-width: 18px;
+        max-width: 18px;
+        padding: 4px 4px;
     }
 
     .cell {
-        width: 44px;
-        min-width: 44px;
-        max-width: 44px;
+        width: 35px;
+        min-width: 35px;
+        max-width: 35px;
         text-align: right;
-        padding: 6px 8px;
+        padding: 4px 6px;
         transition: background-color 0.2s ease;
     }
 
@@ -637,11 +637,11 @@ function continue_processing()
     }
 
     .cellwide {
-        width: 60px;
-        min-width: 60px;
-        max-width: 60px;
+        width: 50px;
+        min-width: 50px;
+        max-width: 50px;
         text-align: right;
-        padding: 6px 8px;
+        padding: 4px 6px;
         font-size: 0.7rem;
         transition: background-color 0.2s ease;
     }
